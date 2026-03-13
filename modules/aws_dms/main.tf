@@ -8,7 +8,7 @@ resource "aws_dms_replication_subnet_group" "main" {
 # 2. Instancia de Replicación
 resource "aws_dms_replication_instance" "main" {
   # Forzamos la clase t3.micro que es la más estable para Dev
-  replication_instance_class   = "dms.t3.micro" 
+  replication_instance_class   = "dms.t3.small" 
   
   replication_instance_id      = "${var.project_name}-replication-instance-${var.environment}"
   allocated_storage            = 20
