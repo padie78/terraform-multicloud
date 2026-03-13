@@ -36,7 +36,7 @@ resource "aws_db_instance" "source_db" {
   backup_retention_period = 1 
   
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
-  db_subnet_group_name   = module.vpc.database_subnet_group # Usamos las subnets del modulo VPC
+  db_subnet_group_name   = module.network.database_subnet_group # Usamos las subnets del modulo VPC
   publicly_accessible    = true
   skip_final_snapshot    = true
 }
@@ -54,7 +54,7 @@ resource "aws_db_instance" "target_db" {
   parameter_group_name = "default.mysql8.0"
   
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
-  db_subnet_group_name   = module.vpc.database_subnet_group
+  db_subnet_group_name   = module.network.database_subnet_group
   publicly_accessible    = true
   skip_final_snapshot    = true
 }
