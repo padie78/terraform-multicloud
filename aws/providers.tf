@@ -12,13 +12,13 @@ terraform {
   backend "s3" {
     bucket         = "tu-terraform-state-bucket" # Cámbialo por tu bucket real
     key            = "aws/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "terraform-lock"
+    region         = "eu-central-1"
+    use_lockfile = true
     encrypt        = true
   }
 }
 
 provider "aws" {
-  region = "us-east-1"
+  region = "eu-central-1"
   # No incluimos access_key ni secret_key aquí por seguridad.
 }
