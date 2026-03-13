@@ -10,7 +10,7 @@ terraform {
 
   # El backend también usará las credenciales inyectadas por el pipeline
   backend "s3" {
-    bucket         = "tu-terraform-state-bucket" # Cámbialo por tu bucket real
+    bucket         = "terraform-multicloud-test"
     key            = "aws/terraform.tfstate"
     region         = "eu-central-1"
     use_lockfile = true
