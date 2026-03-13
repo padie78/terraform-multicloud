@@ -3,7 +3,7 @@
 resource "aws_security_group" "rds_sg" {
   name        = "rds-migration-sg"
   description = "Permitir trafico MySQL"
-  vpc_id      = module.vpc.vpc_id # Viene de tu modulo VPC
+  vpc_id      = module.network.vpc_id # Viene de tu modulo VPC
 
   ingress {
     from_port   = 3306

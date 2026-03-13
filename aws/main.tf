@@ -23,7 +23,7 @@ module "dms_migration" {
   source             = "../modules/aws_dms"
   project_name       = "sms"
   environment        = terraform.workspace
-  subnet_ids         = module.vpc.public_subnets # Usamos las subredes que vienen del módulo VPC
+  subnet_ids         = module.network.public_subnets # Usamos las subredes que vienen del módulo VPC
   
   source_db_address  = aws_db_instance.source_db.address
   source_db_username = "admin"
