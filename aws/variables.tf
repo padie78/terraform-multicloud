@@ -1,3 +1,15 @@
+variable "source_db_password" {
+  description = "Password para la base de datos de origen"
+  type        = string
+  sensitive   = true
+}
+
+variable "target_db_password" {
+  description = "Password para la base de datos de destino"
+  type        = string
+  sensitive   = true
+}
+
 variable "env_configs" {
   type = map(object({
     cidr       = string
