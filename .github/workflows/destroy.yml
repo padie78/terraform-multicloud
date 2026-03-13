@@ -1,0 +1,57 @@
+name: "Terraform Destroy"
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Formato: CLOUD_ENV (ej: AWS_DEV)'
+        required: true
+        type: string
+
+jobs:
+  destroy:
+    name: "Terraform Destroy"
+    runs-on: ubuntu-latest
+    env:
+      # Aunque destruyas, Terraform necesita las variables para cargar el grafo de recursos
+      TF_VAR_source_db_password: ${{ secrets.SOURCE_DB_PASSWORD }}
+      TF_VAR_target_db_password: ${{ secrets.TARGET_DB_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse Input
+        id: parse
+        run: |
+          TARGET="${{ github.event.inputs.target }}"
+          FOLDER=$(echo $TARGET | cut -d'_' -f1 | tr '[:upper:]' '[:lower:]')
+          WORKSPACE=$(echo $TARGET | cut -d'_' -f2 | tr '[:upper:]' '[:lower:]')
+          echo "folder=$FOLDER" >> $GITHUB_OUTPUT
+          echo "workspace=$WORKSPACE" >> $GITHUB_OUTPUT
+          # Seteamos el entorno para que coincida con el despliegue
+          echo "TF_VAR_environment=$WORKSPACE" >> $GITHUB_ENV
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1 
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Destroy
+        run: |
+          cd ${{ steps.parse.outputs.folder }}
+          
+          # 1. Inicializar para conectar con el backend S3
+          terraform init -reconfigure
+          
+          # 2. Seleccionar el workspace correcto para no borrar lo que no corresponde
+          terraform workspace select ${{ steps.parse.outputs.workspace }}
+          
+          # 3. Ejecutar la destrucción automática
+          echo "Iniciando la destrucción de recursos para ${{ github.event.inputs.target }}..."
+          terraform destroy -auto-approve
