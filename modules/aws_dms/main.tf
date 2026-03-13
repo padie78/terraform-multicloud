@@ -7,12 +7,25 @@ resource "aws_dms_replication_subnet_group" "main" {
 
 # 2. Instancia de Replicación
 resource "aws_dms_replication_instance" "main" {
-  replication_instance_class   = var.replication_instance_class
+  # Forzamos la clase t3.micro que es la más estable para Dev
+  replication_instance_class   = "dms.t3.micro" 
+  
   replication_instance_id      = "${var.project_name}-replication-instance-${var.environment}"
   allocated_storage            = 20
   apply_immediately            = true
+  
+  # Versión del motor de DMS (opcional pero recomendado para estabilidad)
+  engine_version               = "3.5.1" 
+
   replication_subnet_group_id  = aws_dms_replication_subnet_group.main.id
-  publicly_accessible          = true # Cambiar a false en producción real
+  publicly_accessible          = true 
+
+  # Esto ayuda a que no se quede trabado al intentar borrar la VPC
+  # Permite que Terraform espere más tiempo a que AWS suelte las ENIs
+  timeouts {
+    create = "30m"
+    delete = "30m"
+  }
 
   tags = { Name = "${var.project_name}-dms-instance" }
 }
