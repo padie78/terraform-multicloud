@@ -15,7 +15,7 @@ resource "aws_dms_replication_instance" "main" {
   apply_immediately            = true
   
   # Versión del motor de DMS (opcional pero recomendado para estabilidad)
-  engine_version               = "3.5.1" 
+  engine_version               = "3.5.3" 
 
   replication_subnet_group_id  = aws_dms_replication_subnet_group.main.id
   publicly_accessible          = true 
