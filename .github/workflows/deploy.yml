@@ -1,0 +1,41 @@
+name: "Terraform Multi-Cloud"
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Formato: CLOUD_ENV (ej: AWS_DEV)'
+        required: true
+        type: string
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse Input
+        id: parse
+        run: |
+          echo "folder=$(echo ${{ github.event.inputs.target }} | cut -d'_' -f1 | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+          echo "workspace=$(echo ${{ github.event.inputs.target }} | cut -d'_' -f2 | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      # --- CONEXIÓN CON AWS ---
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1 # Ajusta a tu región principal
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Execution
+        run: |
+          cd ${{ steps.parse.outputs.folder }}
+          terraform init
+          terraform workspace select ${{ steps.parse.outputs.workspace }} || terraform workspace new ${{ steps.parse.outputs.workspace }}
+          terraform plan -out=tfplan
+          # terraform apply -auto-approve tfplan
