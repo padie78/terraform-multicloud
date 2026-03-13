@@ -12,9 +12,12 @@ module "vpc_internal" {
   enable_nat_gateway = var.enable_nat
   single_nat_gateway = true
 
+  # --- CORRECCIÓN AQUÍ ---
+  # Activamos el grupo, pero le decimos que use las subredes privadas que ya existen
   create_database_subnet_group = true
-  database_subnets             = var.private_subnets # O las que prefieras para la DB
-
+  create_database_subnet_route_table = false 
+  # No definimos 'database_subnets' aquí para que no intente crear nuevas IPs que choquen
+  
   tags = {
     Environment = terraform.workspace
     ManagedBy   = "Terraform"
