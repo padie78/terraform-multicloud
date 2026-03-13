@@ -14,8 +14,6 @@ jobs:
     env:
       TF_VAR_source_db_password: ${{ secrets.SOURCE_DB_PASSWORD }}
       TF_VAR_target_db_password: ${{ secrets.TARGET_DB_PASSWORD }}
-      # No podemos usar steps.parse acá arriba porque el job se evalúa antes
-      # así que inyectaremos la variable en un paso posterior (ver abajo)
 
     steps:
       - name: Checkout
@@ -51,12 +49,14 @@ jobs:
           # 1. Selección de Workspace
           terraform workspace select -or-create ${{ steps.parse.outputs.workspace }}
           
-          # 2. LIMPIEZA QUIRÚRGICA: 
-          # Borramos las referencias obsoletas para que se creen en la nueva VPC.
-          echo "Ejecutando limpieza de estado para recursos inmutables..."
-          terraform state rm module.dms_migration.aws_dms_replication_subnet_group.main || true
-          terraform state rm module.network.aws_db_subnet_group.database || true
+          # 2. ADOPCIÓN DE RECURSOS (Import): 
+          # En lugar de borrar, los importamos al estado si ya existen en AWS.
+          # Esto evita el error de "AlreadyExists" y sincroniza el S3.
+          echo "Sincronizando recursos existentes al estado..."
+          terraform import module.dms_migration.aws_dms_replication_subnet_group.main sms-subnets-dev-new || true
+          terraform import module.network.aws_db_subnet_group.database vpc-dev-db-group-fix || true
           
           # 3. Despliegue
+          # Ahora Terraform verá que ya los tiene en el estado y no intentará recrearlos.
           terraform plan -out=tfplan
           terraform apply -auto-approve tfplan
