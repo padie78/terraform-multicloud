@@ -36,6 +36,8 @@ jobs:
         run: |
           cd ${{ steps.parse.outputs.folder }}
           terraform init
-          terraform workspace select ${{ steps.parse.outputs.workspace }} || terraform workspace new ${{ steps.parse.outputs.workspace }}
+          
+          # ESTA ES LA LÍNEA QUE DEBES CAMBIAR:
+          terraform workspace select -or-create ${{ steps.parse.outputs.workspace }}          
           terraform plan -out=tfplan
-          # terraform apply -auto-approve tfplan
+          terraform apply -auto-approve tfplan
