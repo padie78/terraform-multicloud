@@ -9,7 +9,7 @@ module "network" {
   vpc_name   = "vpc-${terraform.workspace}"
   cidr_block = local.env.cidr
   
-  availability_zones = ["us-east-1a", "us-east-1b"]
+  availability_zones = ["eu-central-1a", "eu-central-1b"]
   
   # Subnetting calculado dinámicamente
   private_subnets = [cidrsubnet(local.env.cidr, 4, 1)]
