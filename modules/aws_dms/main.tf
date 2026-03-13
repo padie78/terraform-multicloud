@@ -1,8 +1,8 @@
 # 1. Grupo de subredes para la instancia de replicación
 resource "aws_dms_replication_subnet_group" "main" {
-  replication_subnet_group_id          = "${var.project_name}-dms-subnets-${var.environment}"
-  replication_subnet_group_description = "Subnet group for DMS replication instance"
-  subnet_ids                           = var.subnet_ids
+  replication_subnet_group_id          = "${var.project_name}-subnets-${var.environment}-new"
+  replication_subnet_group_description = "Subnet group for DMS"
+  subnet_ids                           = var.subnet_ids # Asegúrate que aquí pasas las públicas o privadas correctamente
 }
 
 # 2. Instancia de Replicación
