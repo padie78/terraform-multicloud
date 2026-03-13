@@ -14,6 +14,9 @@ jobs:
     env:
       TF_VAR_source_db_password: ${{ secrets.SOURCE_DB_PASSWORD }}
       TF_VAR_target_db_password: ${{ secrets.TARGET_DB_PASSWORD }}
+      # No podemos usar steps.parse acá arriba porque el job se evalúa antes
+      # así que inyectaremos la variable en un paso posterior (ver abajo)
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,16 +24,20 @@ jobs:
       - name: Parse Input
         id: parse
         run: |
-          echo "folder=$(echo ${{ github.event.inputs.target }} | cut -d'_' -f1 | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
-          echo "workspace=$(echo ${{ github.event.inputs.target }} | cut -d'_' -f2 | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+          TARGET="${{ github.event.inputs.target }}"
+          FOLDER=$(echo $TARGET | cut -d'_' -f1 | tr '[:upper:]' '[:lower:]')
+          WORKSPACE=$(echo $TARGET | cut -d'_' -f2 | tr '[:upper:]' '[:lower:]')
+          echo "folder=$FOLDER" >> $GITHUB_OUTPUT
+          echo "workspace=$WORKSPACE" >> $GITHUB_OUTPUT
+          # Seteamos la variable de entorno para que Terraform la lea
+          echo "TF_VAR_environment=$WORKSPACE" >> $GITHUB_ENV
 
-      # --- CONEXIÓN CON AWS ---
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-central-1 # Ajusta a tu región principal
+          aws-region: eu-central-1 
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -38,9 +45,18 @@ jobs:
       - name: Terraform Execution
         run: |
           cd ${{ steps.parse.outputs.folder }}
-          terraform init
           
-          # ESTA ES LA LÍNEA QUE DEBES CAMBIAR:
-          terraform workspace select -or-create ${{ steps.parse.outputs.workspace }}          
+          terraform init -reconfigure
+          
+          # 1. Selección de Workspace
+          terraform workspace select -or-create ${{ steps.parse.outputs.workspace }}
+          
+          # 2. LIMPIEZA QUIRÚRGICA: 
+          # Borramos las referencias obsoletas para que se creen en la nueva VPC.
+          echo "Ejecutando limpieza de estado para recursos inmutables..."
+          terraform state rm module.dms_migration.aws_dms_replication_subnet_group.main || true
+          terraform state rm module.network.aws_db_subnet_group.database || true
+          
+          # 3. Despliegue
           terraform plan -out=tfplan
           terraform apply -auto-approve tfplan
