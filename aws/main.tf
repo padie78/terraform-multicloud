@@ -30,7 +30,7 @@ module "network" {
 
 module "dms_migration" {
   # CORRECCIÓN: Ruta relativa ajustada
-  source             = "./modules/aws_dms"
+  source             = "../modules/aws_dms"
   project_name       = "sms"
   environment        = terraform.workspace
   
