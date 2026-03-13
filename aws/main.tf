@@ -20,7 +20,7 @@ module "network" {
 }
 
 module "dms_migration" {
-  source             = "./modules/aws_dms"
+  source             = "../modules/aws_dms"
   project_name       = "sms"
   environment        = terraform.workspace
   subnet_ids         = module.vpc.public_subnets # Usamos las subredes que vienen del módulo VPC
