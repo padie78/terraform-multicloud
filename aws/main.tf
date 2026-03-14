@@ -1,46 +1,35 @@
 locals {
-  # El pipeline selecciona el workspace. Si no existe en el mapa, falla aquí.
   env = lookup(var.env_configs, terraform.workspace, null)
 }
 
 module "network" {
-  # CORRECCIÓN: Ruta relativa si el archivo está en la raíz de la carpeta 'aws'
   source = "../modules/aws_vpc"
 
-  vpc_name   = "vpc-${terraform.workspace}"
-  cidr_block = local.env.cidr
-  
-  # CORRECCIÓN: Definimos 2 AZs para cumplir con el requisito de AWS DMS
+  vpc_name           = "vpc-${terraform.workspace}"
+  cidr_block         = local.env.cidr
   availability_zones = ["eu-central-1a", "eu-central-1b"]
   
-  # CORRECCIÓN: Subnetting con prefijo 8 para evitar solapamiento (ej: 10.0.1.0/24, 10.0.2.0/24, etc.)
-  # Se generan 2 privadas y 2 públicas para asegurar el "2 item minimum" de DMS
-  private_subnets = [
+  # Mantenemos 2 públicas para que el DMS Subnet Group no falle (mínimo 2 AZs)
+  public_subnets  = [
     cidrsubnet(local.env.cidr, 8, 1), 
     cidrsubnet(local.env.cidr, 8, 2)
   ]
-  public_subnets  = [
-    cidrsubnet(local.env.cidr, 8, 101), 
-    cidrsubnet(local.env.cidr, 8, 102)
-  ]
   
-  # Inyección de dependencia desde el mapa de variables
-  enable_nat = local.env.enable_nat
+  # Ya no necesitas NAT Gateway (ahorro de costos y complejidad en la PoC)
+  enable_nat = false
 }
 
 module "dms_migration" {
-  # CORRECCIÓN: Ruta relativa ajustada
   source             = "../modules/aws_dms"
   project_name       = "sms"
   environment        = terraform.workspace
   
-  # CORRECCIÓN: Referencia al nombre correcto del módulo ('network')
+  # DMS usará las subredes donde ahora también estará tu RDS
   subnet_ids         = module.network.public_subnets 
   
-  # Referencia dinámica a las instancias creadas en rds.tf
   source_db_address  = aws_db_instance.source_db.address
   source_db_username = aws_db_instance.source_db.username
-  source_db_password = var.source_db_password # Se recomienda usar variables para passwords
+  source_db_password = var.source_db_password
 
   target_db_address  = aws_db_instance.target_db.address
   target_db_username = aws_db_instance.target_db.username
@@ -51,7 +40,7 @@ module "dms_migration" {
       rule-type = "selection"
       rule-id   = "1"
       rule-name = "1"
-      object-locator = { schema-name = "mydb", table-name = "users" }
+      object-locator = { schema-name = "sms_db", table-name = "co2_emissions" } # Actualizado para tu tabla de SMS
       rule-action = "include"
     }]
   })

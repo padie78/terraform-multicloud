@@ -8,11 +8,6 @@ output "public_subnets" {
   value       = module.vpc_internal.public_subnets
 }
 
-output "private_subnets" {
-  description = "Lista de IDs de las subredes privadas"
-  value       = module.vpc_internal.private_subnets
-}
-
 output "database_subnet_group" {
   description = "Nombre del grupo de subredes para la DB"
   value       = aws_db_subnet_group.database.name
